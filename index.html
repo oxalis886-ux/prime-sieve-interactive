@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>百數圖｜質數篩選互動實作版</title>
+<style>
+:root{font-family:"Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif;color:#20334a;background:#edf3f9}*{box-sizing:border-box}body{margin:0}main{max-width:1050px;margin:auto;padding:18px}h1{font-size:clamp(23px,4vw,34px);margin:8px 0}p{line-height:1.6}.sub{color:#51677e;margin:0 0 15px}.tabs,.actions,.controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}button{font:inherit;cursor:pointer;border:2px solid #a6b9cd;border-radius:12px;background:#fff;color:#17314d;padding:10px 16px;font-weight:700}button:focus-visible{outline:3px solid #2674d5;outline-offset:2px}button.active,.primary{background:#1766ba;color:#fff;border-color:#1766ba}button:disabled{opacity:.48;cursor:not-allowed}.panel{background:white;border-radius:17px;padding:16px;box-shadow:0 3px 15px #193f6515;margin:12px 0}.banner{border-left:6px solid #2278c8;background:#e9f3ff;border-radius:10px;padding:14px 16px;font-size:clamp(19px,3.1vw,26px);font-weight:800;line-height:1.55;min-height:85px}.feedback{margin-top:12px;padding:13px 16px;border-radius:11px;min-height:52px;font-size:18px;font-weight:700;line-height:1.5;background:#f0f5fa}.feedback.good{background:#dff5e4;color:#125e2a}.feedback.bad{background:#fff0e7;color:#9a3412}.feedback.tip{background:#fff6d9;color:#74510c}.feedback.info{background:#e8f2ff;color:#184b87}.progress{font-size:15px;color:#536b83;font-weight:700;margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;margin:15px auto;max-width:790px}.cell{position:relative;aspect-ratio:1;padding:0;border:2px solid #d4e0eb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:clamp(12px,2.5vw,22px);font-weight:800;min-width:0;transition:background .12s;background:#fff;color:#19344e}.cell:hover:not(:disabled){border-color:#327ad0}.cell.green{background:#a9ec67;border-color:#70b934}.cell.removed{background:#d8dce2;color:#5c626c;border-color:#c5cbd4}.cell.green.removed{background:#a9ec67;border-color:#70b934}.cell.circle::after{content:"";position:absolute;inset:9%;border:3px solid #e53935;border-radius:50%;pointer-events:none}.cell.cross::before{content:"×";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,4vw,43px);font-weight:500;color:#707783aa;pointer-events:none;line-height:1}.cell.green.cross::before{color:#555e68aa}.cell.mistake{background:#ffe0bf;border-color:#e58a24}.cell.omitted{background:#e1edff;border-color:#357bd2;box-shadow:inset 0 0 0 2px #357bd2}.cell .num{z-index:1}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:#50647a;margin:10px 0}.swatch{width:18px;height:18px;display:inline-block;border:1px solid #a7b6c5;border-radius:4px;vertical-align:middle;margin-right:5px}.legend .circlemark{display:inline-block;border:2px solid #e53935;border-radius:50%;width:18px;height:18px;vertical-align:middle;margin-right:5px}.segments{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.segment{border-radius:9px;background:#e8f0fa;padding:9px 12px;font-weight:700}.segment.ok{background:#dff5e4;color:#14632e}.result{font-size:19px;line-height:1.8}.small{color:#5a6d80;font-size:14px}.identity{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.identity label{display:flex;flex-direction:column;gap:5px;font-weight:700}.identity input{font:inherit;width:100%;min-width:0;padding:10px 12px;border:2px solid #a6b9cd;border-radius:9px;background:#fff;color:#20334a}.identity input:focus{outline:2px solid #2674d5;outline-offset:1px}.hidden{display:none!important}@media(max-width:550px){.identity{grid-template-columns:1fr 1fr}.identity label:last-child{grid-column:1/-1}main{padding:10px}.panel{padding:11px}.grid{gap:2px}.cell{border-width:1px;border-radius:4px}.cell.circle::after{border-width:2px}.cell.cross::before{font-size:clamp(17px,5vw,28px)}button{padding:9px 11px;font-size:15px}}
+</style>
+</head>
+<body><main>
+<h1>🔎 百數圖｜質數篩選互動實作版</h1>
+<p class="sub">親手找倍數、保留質數、刪除合數，再挑戰100以內的25個質數。</p>
+<section class="panel"><div class="identity"><label>班級<input id="studentClass" type="text" placeholder="例如：701" autocomplete="off"></label><label>座號<input id="studentNumber" type="text" inputmode="numeric" placeholder="例如：12" autocomplete="off"></label><label>姓名<input id="studentName" type="text" placeholder="請輸入姓名" autocomplete="off"></label></div></section>
+<div class="tabs"><button id="guidedTab" class="active">引導篩選</button><button id="challengeTab">獨立找質數</button></div><div id="levels" class="tabs hidden"><button data-level="10">10以內｜4個質數</button><button data-level="20">20以內｜8個質數</button><button data-level="100">100以內｜25個質數</button></div>
+<section class="panel">
+<div id="progress" class="progress"></div>
+<div id="instruction" class="banner" aria-live="polite"></div>
+<div id="feedback" class="feedback info" aria-live="polite">請依照提示，在百數圖上點選數字。</div>
+<div class="legend"><span><i class="swatch" style="background:#a9ec67"></i>本輪找到的倍數</span><span><i class="swatch" style="background:#d8dce2"></i>已刪除的合數</span><span><i class="circlemark"></i>已保留的質數</span></div>
+<div id="hintbar" class="actions"></div><div id="segment" class="small hidden"></div><div class="grid" id="grid" aria-label="1到100百數圖"></div>
+<div class="actions" id="actions"></div><div id="checkNotice" class="feedback tip hidden" role="status" aria-live="polite"></div>
+<div id="result" class="result hidden"></div>
+</section>
+<div class="controls"><button id="restart">↻ 重新練習</button></div>
+<p class="small">操作說明：引導篩選時，點錯立即說明原因；第一次檢查提醒累加，第二次指出遺漏區段。獨立找質數時，點選可圈選，再點一次可取消；按「我選完了」查看錯誤與原因。</p>
+</main>
+<script>
+"use strict";
+const allPrimes=Array.from({length:100},(_,i)=>i+1).filter(n=>n>1&&Array.from({length:Math.max(0,Math.floor(Math.sqrt(n))-1)},(_,i)=>i+2).every(d=>n%d!==0));
+const ps=[2,3,5,7], grid=document.getElementById("grid"),instruction=document.getElementById("instruction"),feedback=document.getElementById("feedback"),actions=document.getElementById("actions"),progress=document.getElementById("progress"),result=document.getElementById("result"),segment=document.getElementById("segment"),hintbar=document.getElementById("hintbar"),levels=document.getElementById("levels");
+let mode="guided",limit=10,phase="one",round=0,removed=new Set(),kept=new Set(),selected=new Set(),errors=new Map(),wrongCount=0,hintCount=0,checkCount=0,hintLevel=0,done=false,challengeChecked=false,challengeAttempts=0,firstChallenge=null,completedDate="";
+const studentClass=document.getElementById("studentClass"),studentNumber=document.getElementById("studentNumber"),studentName=document.getElementById("studentName");
+const targetPrimes=()=>allPrimes.filter(n=>n<=limit);
+const pNow=()=>ps[round];
+const checkNotice=document.getElementById("checkNotice");
+const targets=()=>Array.from({length:Math.floor(100/pNow())},(_,i)=>(i+1)*pNow());
+const missing=()=>targets().filter(n=>!selected.has(n));
+function tell(msg,type="info"){feedback.className="feedback "+type;feedback.textContent=msg}
+function error(n,brief,reason){wrongCount++;tell(reason,"bad")}
+function resetStage(){checkNotice.classList.add("hidden");checkNotice.textContent="";errors.clear();checkCount=0;hintLevel=0;segment.classList.add("hidden");segment.innerHTML=""}
+function restart(){checkNotice.classList.add("hidden");checkNotice.textContent="";phase=mode==="guided"?"one":"challenge";round=0;removed=new Set();kept=new Set();selected=new Set();errors=new Map();wrongCount=0;hintCount=0;checkCount=0;hintLevel=0;done=false;challengeChecked=false;challengeAttempts=0;firstChallenge=null;completedDate="";tell("請依照提示，在百數圖上點選數字。");render()}
+function switchMode(m){mode=m;document.getElementById("guidedTab").classList.toggle("active",m==="guided");document.getElementById("challengeTab").classList.toggle("active",m==="challenge");levels.classList.toggle("hidden",m!=="challenge");restart()}
+document.getElementById("guidedTab").onclick=()=>switchMode("guided");
+document.getElementById("challengeTab").onclick=()=>switchMode("challenge");
+document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>{limit=Number(b.dataset.level);restart()});
+document.getElementById("restart").onclick=restart;
+function addAction(label,fn,primary=false){let b=document.createElement("button");b.textContent=label;if(primary)b.className="primary";b.onclick=fn;actions.appendChild(b)}
+function render(){
+ const p=pNow();
+ document.querySelectorAll("[data-level]").forEach(b=>b.classList.toggle("active",Number(b.dataset.level)===limit));
+ progress.textContent=mode==="guided"?(phase==="one"?"引導篩選｜準備階段":phase==="multiples"||phase==="keep"?"引導篩選｜第 "+(round+1)+" 輪：找 "+p+" 的倍數":phase==="final"?"引導篩選｜最後圈出質數":"引導篩選｜完成"):"獨立挑戰｜"+limit+"以內";
+ if(mode==="challenge")instruction.textContent=done?"恭喜完成！":"請圈選"+limit+"以內所有質數（共"+targetPrimes().length+"個）。點一下圈選，再點一下取消；選好後按「我選完了」。";
+ else if(phase==="one")instruction.textContent="哪一個數既不是質數，也不是合數？請點選它，把它刪除。";
+ else if(phase==="multiples")instruction.textContent="請逐一點選100以內所有"+p+"的倍數。找齊後按「完成檢查」。";
+ else if(phase==="keep")instruction.textContent="在剛才找到的"+p+"的倍數中，哪一個是質數？請點選保留它，其餘倍數會被刪除。";
+ else if(phase==="final")instruction.textContent="篩選2、3、5、7後，還有哪些質數沒有圈起來？請逐一點選。";
+ else instruction.textContent="恭喜完成！";
+ const showSegment=mode==="guided"&&phase==="multiples"&&checkCount>=2&&missing().length>0;
+ segment.classList.toggle("hidden",!showSegment&&!(mode==="challenge"&&challengeChecked));
+ if(mode!=="guided"||phase!=="multiples"||checkCount===0||missing().length===0){checkNotice.classList.add("hidden");checkNotice.textContent=""}
+ if(showSegment){
+  const m=missing(),ranges=Array.from({length:10},(_,i)=>[i*10+1,i*10+10]);
+  const rows=ranges.map(([a,b])=>({a,b,count:m.filter(n=>n>=a&&n<=b).length})).filter(r=>r.count>0);
+  const common=m.some(n=>removed.has(n));
+  segment.innerHTML='<div class="segments">'+rows.map(r=>'<div class="segment">'+r.a+'～'+r.b+'：還差'+r.count+'個</div>').join('')+'</div>'+(checkCount>=2&&common?'<div class="feedback tip" style="margin-top:8px">提醒：灰色 X 的數字也要檢查！已刪除的數字仍可能是這一輪的倍數。</div>':'');
+ }else if(mode!=="challenge"||!challengeChecked)segment.innerHTML="";
+ grid.innerHTML="";
+ const max=mode==="challenge"?limit:100;
+ for(let n=1;n<=max;n++){
+  const b=document.createElement("button");b.type="button";b.className="cell";b.setAttribute("aria-label",n+" "+(removed.has(n)?"已刪除":kept.has(n)?"已圈選":""));
+  const green=mode==="guided"&&(phase==="multiples"||phase==="keep")&&selected.has(n);
+  if(green)b.classList.add("green");
+  if(mode==="guided"&&removed.has(n))b.classList.add("removed","cross");
+  if(kept.has(n))b.classList.add("circle");
+  if(mode==="challenge"&&challengeChecked){if(kept.has(n)&&!allPrimes.includes(n))b.classList.add("mistake");if(!kept.has(n)&&allPrimes.includes(n))b.classList.add("omitted") }
+  const span=document.createElement("span");span.className="num";span.textContent=n;b.appendChild(span);
+  if(done)b.disabled=true;
+  b.onclick=()=>choose(n);grid.appendChild(b);
+ }
+ actions.innerHTML="";hintbar.innerHTML="";
+ if(!done&&phase==="multiples"&&mode==="guided"){addAction("完成檢查",check,true);addAction("清除本輪選取",()=>{selected.clear();resetStage();tell("已清除本輪選取，請重新找倍數。");render()})}
+ if(!done&&phase==="final"&&mode==="guided")addAction("完成檢查",check,true);
+ if(!done&&mode==="challenge")addAction("我選完了",check,true);
+ if(done)addAction("再練習一次",restart,true);
+ if(done){
+  result.classList.remove("hidden");result.innerHTML="";
+  const add=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;result.appendChild(e)};
+  add("strong","🎉 完成！");
+  add("div","班級："+(studentClass.value.trim()||"未填寫")+"　座號："+(studentNumber.value.trim()||"未填寫")+"　姓名："+(studentName.value.trim()||"未填寫"));
+  add("div","範圍："+(mode==="challenge"?limit:"100")+"以內｜找出質數："+(mode==="challenge"?targetPrimes().length:25)+"個");
+  add("div","練習日期："+completedDate);
+  if(mode==="challenge"){
+   const total=targetPrimes().length;
+   add("div","第一次檢查正確率："+firstChallenge.accuracy+"%（"+firstChallenge.score+" / "+total+"）");
+   add("div","第一次檢查：漏選"+firstChallenge.missed+"個、誤選"+firstChallenge.wrong+"個");
+   add("div","完成檢查次數："+challengeAttempts+"次");
+   add("div","最終結果：全部正確");
+  }else add("div","錯誤點選："+wrongCount+"次");
+  add("div","質數："+(mode==="challenge"?targetPrimes():allPrimes).join("、"));
+  add("div","請截圖保存成果。","small");
+}
+ else result.classList.add("hidden");
+}
+
+function choose(n){
+ if(done)return;
+ if(mode==="challenge"){
+  if(kept.has(n)){kept.delete(n);tell("已取消"+n+"的紅圈。")}else{kept.add(n);tell("已圈選"+n+"。可繼續選取，或再點一次取消。")} 
+  challengeChecked=false;segment.innerHTML="";render();return;
+ }
+ if(phase==="one"){
+  if(n===1){removed.add(1);phase="multiples";resetStage();tell("答對了！1只有一個正因數，因此既不是質數也不是合數。接下來找2的倍數。","good")}
+  else error(n,"這不是我們要找的數。","質數與合數都大於1；只有1既不是質數也不是合數。");
+ }else if(phase==="multiples"){
+  const p=pNow();
+  if(n%p===0){
+   if(selected.has(n)){selected.delete(n);tell("已取消"+n+"的綠色標示。")}
+   else{selected.add(n);errors.delete(n);const earlier=ps.slice(0,round).filter(d=>n%d===0);tell(earlier.length?n+"是"+earlier.join("、")+"和"+p+"的公倍數；即使之前已刪除，仍要選取。":"答對了！"+n+"是"+p+"的倍數。",earlier.length?"tip":"good")}
+  }else error(n,n+"不是"+p+"的倍數。",n+"÷"+p+"不能整除，所以"+n+"不是"+p+"的倍數。");
+ }else if(phase==="keep"){
+  const p=pNow();
+  if(n===p){
+   kept.add(p);for(const k of targets())if(k!==p)removed.add(k);
+   selected.clear();resetStage();round++;
+   if(round===ps.length){phase="final";tell("答對了！已完成2、3、5、7的倍數篩選。剩餘的質數請親自圈出。","good")}
+   else{phase="multiples";tell("答對了！保留質數"+p+"；其餘倍數成為灰底＋灰色X。接著找"+pNow()+"的倍數。","good")}
+  }else if(selected.has(n))error(n,n+"不是本輪要保留的質數。",n+"能被"+p+"整除，而且不等於"+p+"，所以是合數。");
+  else error(n,"請從本輪綠色數字中找質數。","本輪要保留的是"+p+"。");
+ }else if(phase==="final")pickPrime(n);
+ render();
+}
+function pickPrime(n){
+ const eligible=mode==="challenge"?targetPrimes():allPrimes;
+ if(eligible.includes(n)){
+  if(kept.has(n)){tell(n+"已經圈選過了。");return}
+  kept.add(n);errors.delete(n);tell("答對了！"+n+"是質數，已圈起來。（"+kept.size+"/"+eligible.length+"）","good");
+ }else{
+  const d=n===1?null:Array.from({length:Math.max(0,n-2)},(_,i)=>i+2).find(x=>n%x===0);
+  error(n,n+"不是質數。",n===1?"1既不是質數也不是合數。":n+"能被"+d+"整除，所以不是質數。");
+ }
+ if(kept.size===eligible.length){done=true;completedDate=localDate();tell("太棒了！已找出全部"+eligible.length+"個質數！","good")}
+}
+function localDate(){const d=new Date();return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")}
+function check(){
+ if(mode==="guided"&&phase==="multiples"){
+  const m=missing();
+  if(m.length){
+   checkCount++;
+   if(checkCount===1){
+    const msg="第一次檢查｜累加提示：從"+pNow()+"開始，每次加"+pNow()+"，依序檢查到100，看看有沒有漏掉的倍數。";
+    tell(msg,"tip");checkNotice.textContent=msg;checkNotice.classList.remove("hidden");
+   }else{
+    const msg="第二次檢查｜還有"+m.length+"個"+pNow()+"的倍數沒找到。請查看上方每10格的遺漏區段。";
+    tell(msg,"tip");checkNotice.textContent=msg;checkNotice.classList.remove("hidden");
+   }render();return;
+  }
+  phase="keep";resetStage();tell("全部找齊！請從綠色數字中選出要保留的質數。","good");render();return;
+ }
+ if(mode==="challenge"){
+  challengeAttempts++;challengeChecked=true;
+  const missed=targetPrimes().filter(n=>!kept.has(n));
+  const wrong=[...kept].filter(n=>!allPrimes.includes(n)).sort((a,b)=>a-b);
+  if(firstChallenge===null){
+   const total=targetPrimes().length;
+   const score=Math.max(0,total-missed.length-wrong.length);
+   firstChallenge={missed:missed.length,wrong:wrong.length,score,accuracy:Math.round(score/total*100)};
+  }
+  if(!missed.length&&!wrong.length){done=true;completedDate=localDate();tell("全部正確！你找到了"+targetPrimes().length+"個質數。請截圖保存成果。","good");render();return}
+  const reason=n=>n===1?"1只有一個正因數，既不是質數也不是合數。":(()=>{const d=Array.from({length:Math.floor(Math.sqrt(n))-1},(_,i)=>i+2).find(d=>n%d===0);return n+"＝"+d+"×"+(n/d)+"，除了1和"+n+"以外還有其他因數，所以不是質數。"})();
+  const notes=[...wrong.map(n=>n+"誤選："+reason(n)),...missed.map(n=>n+"漏選："+n+"只有1和"+n+"兩個正因數，所以是質數。")];
+  tell("需要修正"+notes.length+"個數字。橘色是誤選，藍色是漏選；請自行取消或補選，再按『我選完了』。","bad");
+  render();
+  segment.classList.remove("hidden");segment.innerHTML="";
+  const heading=document.createElement("strong");heading.textContent="檢查說明：";segment.appendChild(heading);
+  for(const note of notes){const item=document.createElement("div");item.className="segment";item.style.marginTop="7px";item.textContent=note;segment.appendChild(item)}
+  return;
+ }
+ const eligible=allPrimes;
+ const m=eligible.filter(n=>!kept.has(n));
+ tell(m.length?"還有"+m.length+"個質數尚未圈選，請再檢查。":"恭喜全部找齊！",m.length?"tip":"good");
+}
+for(const el of [studentClass,studentNumber,studentName])el.addEventListener("input",()=>{if(done)render()});
+restart();
+</script></body></html>
